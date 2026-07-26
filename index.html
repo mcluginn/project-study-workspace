@@ -183,23 +183,29 @@
     // --- FIREBASE SAVING/LOADING LOGIC ---
     let saveTimeout;
     function saveState() {
-      // Debounce saving to Firebase to prevent overwhelming the database on every keystroke
+      console.log("Saving state locally...");
+      try {
+        localStorage.setItem('project_study_1_v8_state', JSON.stringify(appState));
+      } catch (e) {
+        console.warn("Local save failed", e);
+      }
+
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(async () => {
+        console.log("Pushing to Firebase...");
         try {
-          // Push to cloud
           await setDoc(stateDocRef, appState);
-          // Also save locally as a backup mechanism
-          localStorage.setItem('project_study_1_v8_state', JSON.stringify(appState));
+          console.log("Successfully saved to Firebase!");
         } catch (e) {
-          console.error("Save error: ", e);
-          showToast("Error saving to cloud.");
+          console.error("Cloud Save error: ", e);
+          showToast("Cloud sync failed. Data saved locally.");
         }
       }, 500);
     }
 
     let isFirstLoad = true;
     onSnapshot(stateDocRef, (docSnap) => {
+      console.log("Firebase sync triggered.");
       if (docSnap.exists()) {
         const newData = docSnap.data();
         
@@ -217,6 +223,7 @@
         }
       } else {
         // Brand new database! Seed it with our migrated local state.
+        console.log("Empty database found. Seeding initial data...");
         setDoc(stateDocRef, appState);
       }
       
